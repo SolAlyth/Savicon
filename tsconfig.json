@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+      "target": "es2022",
+      "module": "es2022",
+      
+      "forceConsistentCasingInFileNames": true,
+      "strict": true,
+      "removeComments": true,
+      "noImplicitAny": true,
+      
+      "rootDir": "./src",
+      "outDir": "./target"
+    },
+    
+    "files": ["./src/main.ts"]
+}
