@@ -3,7 +3,7 @@ import {
     play_toggle, absolute_jump, relative_jump, speed_faster, speed_slower,
     create_save_cycle, load_playtime,
     input_playtime
-} from "./lib.js"
+} from "lib"
 
 export const main = (window: any) => {
     if (!hostname_check()) { alert("駿台サテネット(kenjaplusv.satt.jp) にのみ対応しています"); return }

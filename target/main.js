@@ -1,4 +1,4 @@
-import { hostname_check, get_lesson_id, running_check, running, get_video_element, play_toggle, absolute_jump, relative_jump, speed_faster, speed_slower, create_save_cycle, load_playtime, input_playtime } from "./lib.js";
+import { hostname_check, get_lesson_id, running_check, running, get_video_element, play_toggle, absolute_jump, relative_jump, speed_faster, speed_slower, create_save_cycle, load_playtime, input_playtime } from "lib";
 export const main = (window) => {
     if (!hostname_check()) {
         alert("駿台サテネット(kenjaplusv.satt.jp) にのみ対応しています");
