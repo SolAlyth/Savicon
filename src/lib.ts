@@ -55,7 +55,7 @@ export const get_lesson_id = (): string | null => {
 };
 
 export const is_running = (window: { savicon_running_flag: boolean | undefined } ): boolean => {
-    return typeof window.savicon_running_flag !== undefined
+    return typeof window.savicon_running_flag !== "undefined"
 }
 
 export const running = (window: { savicon_running_flag: boolean | undefined } ) => {

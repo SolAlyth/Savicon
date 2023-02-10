@@ -34,7 +34,7 @@ export const get_lesson_id = () => {
     return (id !== null) ? `${id[1]}-${id[2]}-${id[3]}` : null;
 };
 export const is_running = (window) => {
-    return typeof window.savicon_running_flag !== undefined;
+    return typeof window.savicon_running_flag !== "undefined";
 };
 export const running = (window) => {
     window.savicon_running_flag = true;
