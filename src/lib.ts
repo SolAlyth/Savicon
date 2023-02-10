@@ -54,11 +54,11 @@ export const get_lesson_id = (): string | null => {
     return (id !== null) ? `${id[1]}-${id[2]}-${id[3]}` : null
 };
 
-export const is_running = (window: any): boolean => {
+export const is_running = (window: { savicon_running_flag: boolean | undefined } ): boolean => {
     return typeof window.savicon_running_flag !== undefined
 }
 
-export const running = (window: any) => {
+export const running = (window: { savicon_running_flag: boolean | undefined } ) => {
     window.savicon_running_flag = true;
 }
 
