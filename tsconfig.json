@@ -12,5 +12,5 @@
       "outDir": "./target"
     },
     
-    "files": ["./src/run.ts"]
+    "files": ["./src/main.ts"]
 }
