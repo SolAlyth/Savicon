@@ -54,8 +54,8 @@ export const get_lesson_id = (): string | null => {
     return (id !== null) ? `${id[1]}-${id[2]}-${id[3]}` : null
 };
 
-export const running_check = (window: any): boolean => {
-    return window.savicon_running_flag !== undefined
+export const is_running = (window: any): boolean => {
+    return typeof window.savicon_running_flag !== undefined
 }
 
 export const running = (window: any) => {

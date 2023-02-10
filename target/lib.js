@@ -33,8 +33,8 @@ export const get_lesson_id = () => {
     const id = (location.pathname).match(/kenjaplus-satenet-1H0\/subjects\/([0-9]+)\/courses\/([0-9]+)\/materials\/([0-9]+)/);
     return (id !== null) ? `${id[1]}-${id[2]}-${id[3]}` : null;
 };
-export const running_check = (window) => {
-    return window.savicon_running_flag !== undefined;
+export const is_running = (window) => {
+    return typeof window.savicon_running_flag !== undefined;
 };
 export const running = (window) => {
     window.savicon_running_flag = true;

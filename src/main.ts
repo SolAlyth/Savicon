@@ -1,5 +1,5 @@
 import {
-    hostname_check, get_lesson_id, running_check, running, get_video_element,
+    hostname_check, get_lesson_id, is_running, running, get_video_element,
     play_toggle, absolute_jump, relative_jump, speed_faster, speed_slower,
     create_save_cycle, load_playtime,
     input_playtime
@@ -11,7 +11,7 @@ export const main = (window: any) => {
     const lesson_id = get_lesson_id();
     if (lesson_id === null) { alert("動画視聴のページでない可能性があります"); return }
     
-    if (running_check(window)) { alert("既に起動しています"); return }
+    if (is_running(window)) { alert("既に起動しています"); return }
     
     const video = get_video_element();
     if (video === null) { alert("動画が見つかりませんでした"); return }
