@@ -1,4 +1,5 @@
 const SPEED_MIN = 0.8, SPEED_MAX = 2.0, SPEED_INTERVAL = 0.2, COOKIE_AGE_DAYS = 1, INTERVAL_DELAY_SECS = 10;
+;
 export class PlayTime {
     h;
     m;
@@ -24,6 +25,41 @@ export class PlayTime {
             return null;
         }
         return new PlayTime((time[2] !== undefined) ? parseInt(time[2]) : 0, parseInt(time[3]), parseInt(time[4]));
+    }
+}
+export class Key {
+    code;
+    shift;
+    constructor(code, shift) {
+        this.code = code;
+        this.shift = shift ?? false;
+    }
+}
+export class KeyMap {
+    keymap;
+    listen_func;
+    constructor(...config) {
+        this.keymap = new Map(config);
+        this.listen_func = null;
+    }
+    create_listener() {
+        if (this.listen_func !== null) {
+            return false;
+        }
+        this.listen_func = (e) => {
+            const func = this.keymap.get(new Key(e.code, e.shiftKey));
+            if (func !== undefined)
+                func();
+        };
+        document.addEventListener("keydown", this.listen_func);
+        return true;
+    }
+    remove_listener() {
+        if (this.listen_func === null) {
+            return false;
+        }
+        document.removeEventListener("keydown", this.listen_func);
+        return true;
     }
 }
 export const hostname_check = () => {
