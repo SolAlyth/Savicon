@@ -26,7 +26,7 @@ print("")
 # なぜか flush を指定しないと表示されない
 print("tsc: ", end="", flush=True)
 subprocess_run("tsc", shell=True)
-print("end")
+print("end\n")
 
 
 
@@ -52,3 +52,4 @@ def fix_and_copy(target_path, docs_path):
         ["lib", "debug/lib"]
     ]
 ]
+print("Format Complete")
