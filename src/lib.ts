@@ -58,37 +58,47 @@ export class Key {
         this.code = code;
         this.shift = shift ?? false;
     }
+    
+    eq(other: Key): boolean {
+        return (this.code === other.code) && (this.shift === other.shift)
+    }
 }
 
+type KeyConfig = [Key, () => void]
 
-
-export class KeyMap {
-    keymap: Map<Key, () => void>
-    listen_func: ((e: KeyboardEvent) => void) | null
+export class Keymap {
+    // keymap は Map にしたかったけど Map.get(Key) ができないので Array
+    keymap: KeyConfig[]
+    listen_func: ((e: KeyboardEvent) => void) | undefined
     
-    constructor(...config: [Key, () => void][]) {
-        this.keymap = new Map(config);
-        this.listen_func = null;
+    constructor(...keymaps: KeyConfig[]) {
+        this.keymap = keymaps;
+        this.listen_func = undefined;
+    }
+    
+    has(key: Key): KeyConfig | undefined {
+        return this.keymap.filter(keycfg => keycfg[0].eq(key))[0]
     }
     
     create_listener(): boolean {
-        if (this.listen_func !== null) { return false }
+        if (this.listen_func !== undefined) { return false }
         
         this.listen_func = (e: KeyboardEvent) => {
-            console.log(e); // !debug: Keyboard Event Check
-            const func = this.keymap.get(new Key(e.code, e.shiftKey));
-            if (func !== undefined) func();
+            const inpkey = new Key(e.code, e.shiftKey);
+            const keycfg = this.has(inpkey);
+            if (keycfg !== undefined) keycfg[1]();
         };
-        
         document.addEventListener("keydown", this.listen_func);
         
         return true
     }
     
     remove_listener(): boolean {
-        if (this.listen_func === null) { return false }
+        if (this.listen_func === undefined) { return false }
         
         document.removeEventListener("keydown", this.listen_func);
+        this.listen_func = undefined;
+        
         return true
     }
 }
@@ -114,7 +124,7 @@ export const running = (window: { savicon_running_flag: boolean | undefined } ) 
     window.savicon_running_flag = true;
 }
 
-export const get_video_element = (): HTMLVideoElement | null => {
+export const get_first_video_element = (): HTMLVideoElement | null => {
     const video = document.getElementsByTagName("video")[0];
     return (video !== undefined) ? video : null
 }
@@ -163,7 +173,11 @@ export const load_playtime = (video: HTMLVideoElement, id: string, confirm: (tim
 // Input
 
 export const input_playtime = (input_message: string, error_message: string): PlayTime | null => {
-    const inp = prompt(input_message)!;
-    // todo
-    return PlayTime.try_from_string(inp)
+    const inp: string | null = prompt(input_message);
+    if (inp === null) return null
+    
+    const playtime = PlayTime.try_from_string(inp);
+    if (playtime === null) alert(error_message);
+    
+    return playtime
 }
