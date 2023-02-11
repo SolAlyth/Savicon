@@ -2,9 +2,9 @@ from re import sub, findall
 from subprocess import run as subprocess_run
 
 
-# !debug が付いた行を削除して src/tmp にコピー
+# "// !debug: (Debug-Name)" が付いた行を削除して src/tmp にコピー
 
-debug_regexp = "\n *(.*?) *// !debug.*"
+debug_regexp = "\n.*// !debug: (.*)"
 
 def delete_debug_and_copy(filename):
     with open(f"./src/{filename}.ts", encoding="utf-8") as tsf:

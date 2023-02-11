@@ -75,6 +75,7 @@ export class KeyMap {
         if (this.listen_func !== null) { return false }
         
         this.listen_func = (e: KeyboardEvent) => {
+            console.log(e); // !debug: Keyboard Event Check
             const func = this.keymap.get(new Key(e.code, e.shiftKey));
             if (func !== undefined) func();
         };
