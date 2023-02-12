@@ -9,13 +9,19 @@ import {
 
 
 
+const if_not_null = <T, U>(value: T | null, func: (value: T) => U): U | null => {
+    return (value !== null) ? func(value) : null
+};
+
+
+
 const hostname_check = (): boolean => {
     return location.hostname === "kenjaplusv.satt.jp"
 };
 
 const get_lesson_id = (): string | null => {
     const id = (location.pathname).match(/kenjaplus-satenet-1H0\/subjects\/([0-9]+)\/courses\/([0-9]+)\/materials\/([0-9]+)/);
-    return (id !== null) ? `${id[1]}-${id[2]}-${id[3]}` : null
+    return if_not_null(id, (marr) => `${marr[1]}-${marr[2]}-${marr[3]}`)
 };
 
 const input_playtime = (input_message: string, error_message: string): PlayTime | null => {
@@ -50,8 +56,8 @@ export const main = (window: { savicon_running_flag: boolean | undefined }): boo
         [ new Key("Space"), () => play_toggle(video) ],
         [ new Key("ArrowLeft"), () => relative_jump(video, -5) ],
         [ new Key("ArrowRight"), () => relative_jump(video, 5) ],
-        [ new Key("Comma", true), () => speed_slower(video) ],
-        [ new Key("Period", true), () => speed_faster(video) ],
+        [ new Key("Comma", true), () => speed_slower(video, 0.8, 0.2) ],
+        [ new Key("Period", true), () => speed_faster(video, 2.0, 0.2) ],
         [ new Key("KeyJ"), () => {
             const playtime = input_playtime("ジャンプ先の時間を入力してください。\nh:mm:ss または mm:ss の形式で入力してください。", "Error: 正しくない形式で入力されている可能性があります。");
             if (playtime !== null) absolute_jump(video, playtime);
@@ -60,6 +66,9 @@ export const main = (window: { savicon_running_flag: boolean | undefined }): boo
     
     keymap.create_listener();
     create_save_cycle(video, lesson_id);
+    
+    // !debug: Keymap.remove_listener() test
+    keymap.remove_listener();
     
     return true
 }

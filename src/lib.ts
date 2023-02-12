@@ -1,7 +1,4 @@
 const
-    SPEED_MIN      = 0.8,
-    SPEED_MAX      = 2.0,
-    SPEED_INTERVAL = 0.2,
     COOKIE_AGE_DAYS     = 1,
     INTERVAL_DELAY_SECS = 10;
 
@@ -150,12 +147,12 @@ export const relative_jump = (video: HTMLVideoElement, time: number) => {
     video.currentTime += time;
 };
 
-export const speed_faster = (video: HTMLVideoElement) => {
-    if (video.playbackRate <= SPEED_MAX - SPEED_INTERVAL) video.playbackRate += SPEED_INTERVAL;
+export const speed_faster = (video: HTMLVideoElement, max: number, interval: number) => {
+    if (video.playbackRate <= max - interval) video.playbackRate += interval;
 };
 
-export const speed_slower = (video: HTMLVideoElement) => {
-    if (SPEED_MIN + SPEED_INTERVAL <= video.playbackRate) video.playbackRate -= SPEED_INTERVAL;
+export const speed_slower = (video: HTMLVideoElement, min: number, interval: number) => {
+    if (min + interval <= video.playbackRate) video.playbackRate -= interval;
 };
 
 const save_playtime = (video: HTMLVideoElement, id: string) => {
