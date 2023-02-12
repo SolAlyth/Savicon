@@ -138,7 +138,7 @@ const play = (video: HTMLVideoElement) => {
     video.play().then(
         () => {},
         (err: DOMException) => {
-            if (err.message !== "The play() request was interrupted by a call to pause().") throw err;
+            if (err.message !== "The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22") throw err;
             
             // !debug: DOMException occur in lib/play (https://github.com/SolAlyth/Savicon/issues/1)
             console.log(`[debug] DOMException occur in lib/play (https://github.com/SolAlyth/Savicon/issues/1)`);
