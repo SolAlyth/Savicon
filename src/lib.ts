@@ -4,7 +4,6 @@ const
     SPEED_INTERVAL = 0.2,
     COOKIE_AGE_DAYS     = 1,
     INTERVAL_DELAY_SECS = 10;
-;
 
 
 
@@ -118,48 +117,62 @@ export const get_lesson_id = (): string | null => {
 
 export const is_running = (window: { savicon_running_flag: boolean | undefined } ): boolean => {
     return typeof window.savicon_running_flag !== "undefined"
-}
+};
 
 export const running = (window: { savicon_running_flag: boolean | undefined } ) => {
     window.savicon_running_flag = true;
-}
+};
 
 export const get_first_video_element = (): HTMLVideoElement | null => {
     const video = document.getElementsByTagName("video")[0];
-    return (video !== undefined) ? video : null
-}
+    return video ?? null
+};
 
 
 
 // Commands
 
+const play = (video: HTMLVideoElement) => {
+    if (video.readyState === video.HAVE_ENOUGH_DATA) video.play();
+    
+    video.play().then(
+        () => {},
+        (err: DOMException) => {
+            if (err.message !== "The play() request was interrupted by a call to pause().") throw err;
+            
+            // !debug: DOMException occur in lib/play (https://github.com/SolAlyth/Savicon/issues/1)
+            console.log(`[debug] DOMException occur in lib/play (https://github.com/SolAlyth/Savicon/issues/1)`);
+        }
+    )
+};
+
 export const play_toggle = (video: HTMLVideoElement) => {
-    if (video.paused) video.play(); else video.pause();
-}
+    if (video.paused) { play(video); } else video.pause();
+};
 
 export const absolute_jump = (video: HTMLVideoElement, playtime: PlayTime) => {
     video.currentTime = playtime.to_secs();
-}
+};
 
 export const relative_jump = (video: HTMLVideoElement, time: number) => {
     video.currentTime += time;
-}
+};
 
 export const speed_faster = (video: HTMLVideoElement) => {
     if (video.playbackRate <= SPEED_MAX - SPEED_INTERVAL) video.playbackRate += SPEED_INTERVAL;
-}
+};
 
 export const speed_slower = (video: HTMLVideoElement) => {
     if (SPEED_MIN + SPEED_INTERVAL <= video.playbackRate) video.playbackRate -= SPEED_INTERVAL;
-}
+};
 
 const save_playtime = (video: HTMLVideoElement, id: string) => {
     document.cookie = `${id}=${Math.floor(video.currentTime)}; Max-age=${86400*COOKIE_AGE_DAYS}`;
-}
+};
 
 export const create_save_cycle = (video: HTMLVideoElement, id: string) => {
     setInterval(() => { save_playtime(video, id); }, 1000*INTERVAL_DELAY_SECS);
-}
+};
 
 export const load_playtime = (video: HTMLVideoElement, id: string, confirm: (time: PlayTime) => boolean) => {
     const match_result = (document.cookie).match(`${id}=([0-9]+)`);
@@ -167,7 +180,7 @@ export const load_playtime = (video: HTMLVideoElement, id: string, confirm: (tim
     
     const playtime = PlayTime.from_secs(parseInt(match_result[1]));
     if (confirm(playtime)) { absolute_jump(video, playtime); }
-}
+};
 
 
 // Input
@@ -180,4 +193,4 @@ export const input_playtime = (input_message: string, error_message: string): Pl
     if (playtime === null) alert(error_message);
     
     return playtime
-}
+};
