@@ -1,13 +1,34 @@
 import {
-    Key, Keymap,
+    Key, Keymap, PlayTime,
     
-    hostname_check, get_lesson_id, is_running, running, get_first_video_element,
+    is_running, running, get_video_element,
     
     play_toggle, absolute_jump, relative_jump, speed_faster, speed_slower,
-    create_save_cycle, load_playtime,
-    
-    input_playtime
+    create_save_cycle, jump_saved_time
 } from "./lib";
+
+
+
+const hostname_check = (): boolean => {
+    return location.hostname === "kenjaplusv.satt.jp"
+};
+
+const get_lesson_id = (): string | null => {
+    const id = (location.pathname).match(/kenjaplus-satenet-1H0\/subjects\/([0-9]+)\/courses\/([0-9]+)\/materials\/([0-9]+)/);
+    return (id !== null) ? `${id[1]}-${id[2]}-${id[3]}` : null
+};
+
+const input_playtime = (input_message: string, error_message: string): PlayTime | null => {
+    const inp: string | null = prompt(input_message);
+    if (inp === null) return null;
+    
+    const playtime = PlayTime.try_from_string(inp);
+    if (playtime === null) alert(error_message);
+    
+    return playtime
+};
+
+
 
 export const main = (window: { savicon_running_flag: boolean | undefined }): boolean => {
     if (!hostname_check()) { alert("Error: 駿台サテネット(kenjaplusv.satt.jp) にのみ対応しています。"); return false }
@@ -18,12 +39,12 @@ export const main = (window: { savicon_running_flag: boolean | undefined }): boo
     if (window === undefined) { alert("Error: 引数が指定されていません。\n心当たりが無い場合は、開発者に問い合わせてください。"); return false }
     if (is_running(window)) { alert("Info: 既に起動しています。"); return false }
     
-    const video = get_first_video_element();
+    const video = get_video_element(0);
     if (video === null) { alert("Error: 動画が見つかりませんでした。"); return false }
     
     running(window);
     
-    load_playtime(video, lesson_id, (playtime) => { return confirm(`${playtime.fmt()} から再開しますか？`) });
+    jump_saved_time(video, lesson_id, (playtime) => { return confirm(`${playtime.fmt()} から再開しますか？`) });
     
     const keymap = new Keymap(
         [ new Key("Space"), () => play_toggle(video) ],

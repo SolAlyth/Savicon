@@ -7,6 +7,12 @@ const
 
 
 
+// if_not_null function
+
+const if_not_null = <T, U>(value: T | null, func: (value: T) => U): U | null => {
+    return (value !== null) ? func(value) : null
+};
+
 // Time class
 
 export class PlayTime {
@@ -19,7 +25,7 @@ export class PlayTime {
     }
     
     fmt(): string {
-        return (this.h === 0) ? `${this.m}:${String(this.s).padStart(2,"0")}` : `${this.h}:${String(this.m).padStart(2,"0")}:${String(this.s).padStart(2,"0")}`
+        return (this.h === 0) ? `${this.m}:${(this.s).toString().padStart(2,"0")}` : `${this.h}:${(this.m).toString().padStart(2,"0")}:${(this.s).toString().padStart(2,"0")}`
     }
     
     to_secs(): number {
@@ -34,11 +40,7 @@ export class PlayTime {
     static try_from_string(from: string): PlayTime | null {
         const time = from.match(/(([1-9]):)?([0-5]?[0-9]):([0-5]?[0-9])/);
         if (time === null) { return null }
-        return new PlayTime(
-            (time[2] !== undefined) ? parseInt(time[2]) : 0,
-            parseInt(time[3]),
-            parseInt(time[4])
-        )
+        return new PlayTime(Number(time[2] ?? 0), Number(time[3]), Number(time[4]))
     }
 }
 
@@ -75,8 +77,8 @@ export class Keymap {
         this.listen_func = undefined;
     }
     
-    has(key: Key): KeyConfig | undefined {
-        return this.keymap.filter(keycfg => keycfg[0].eq(key))[0]
+    has(key: Key): KeyConfig | null {
+        return this.keymap.find(keycfg => keycfg[0].eq(key)) ?? null
     }
     
     create_listener(): boolean {
@@ -85,7 +87,7 @@ export class Keymap {
         this.listen_func = (e: KeyboardEvent) => {
             const inpkey = new Key(e.code, e.shiftKey);
             const keycfg = this.has(inpkey);
-            if (keycfg !== undefined) keycfg[1]();
+            if (keycfg !== null) keycfg[1]();
         };
         document.addEventListener("keydown", this.listen_func);
         
@@ -106,15 +108,6 @@ export class Keymap {
 
 // Check / Get
 
-export const hostname_check = (): boolean => {
-    return location.hostname === "kenjaplusv.satt.jp"
-};
-
-export const get_lesson_id = (): string | null => {
-    const id = (location.pathname).match(/kenjaplus-satenet-1H0\/subjects\/([0-9]+)\/courses\/([0-9]+)\/materials\/([0-9]+)/);
-    return (id !== null) ? `${id[1]}-${id[2]}-${id[3]}` : null
-};
-
 export const is_running = (window: { savicon_running_flag: boolean | undefined } ): boolean => {
     return typeof window.savicon_running_flag !== "undefined"
 };
@@ -123,9 +116,8 @@ export const running = (window: { savicon_running_flag: boolean | undefined } ) 
     window.savicon_running_flag = true;
 };
 
-export const get_first_video_element = (): HTMLVideoElement | null => {
-    const video = document.getElementsByTagName("video")[0];
-    return video ?? null
+export const get_video_element = (index: number): HTMLVideoElement | null => {
+    return document.getElementsByTagName("video")[index] ?? null;
 };
 
 
@@ -133,7 +125,7 @@ export const get_first_video_element = (): HTMLVideoElement | null => {
 // Commands
 
 const play = (video: HTMLVideoElement) => {
-    if (video.readyState === video.HAVE_ENOUGH_DATA) video.play();
+    if (video.readyState >= video.HAVE_FUTURE_DATA) video.play();
     
     video.play().then(
         () => {},
@@ -141,13 +133,13 @@ const play = (video: HTMLVideoElement) => {
             if (err.message !== "The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22") throw err;
             
             // !debug: DOMException occur in lib/play (https://github.com/SolAlyth/Savicon/issues/1)
-            console.log(`[debug] DOMException occur in lib/play (https://github.com/SolAlyth/Savicon/issues/1)`);
+            console.log(`debug: DOMException occur in lib/play (https://github.com/SolAlyth/Savicon/issues/1)`);
         }
     )
 };
 
 export const play_toggle = (video: HTMLVideoElement) => {
-    if (video.paused) { play(video); } else video.pause();
+    if (video.paused) play(video); else video.pause();
 };
 
 export const absolute_jump = (video: HTMLVideoElement, playtime: PlayTime) => {
@@ -174,23 +166,13 @@ export const create_save_cycle = (video: HTMLVideoElement, id: string) => {
     setInterval(() => { save_playtime(video, id); }, 1000*INTERVAL_DELAY_SECS);
 };
 
-export const load_playtime = (video: HTMLVideoElement, id: string, confirm: (time: PlayTime) => boolean) => {
+const load_playtime = (id: string): PlayTime | null => {
     const match_result = (document.cookie).match(`${id}=([0-9]+)`);
-    if (match_result === null) { return }
-    
-    const playtime = PlayTime.from_secs(parseInt(match_result[1]));
-    if (confirm(playtime)) { absolute_jump(video, playtime); }
-};
+    return if_not_null(match_result, (matcharr) => PlayTime.from_secs(Number(matcharr[1])))
+}
 
-
-// Input
-
-export const input_playtime = (input_message: string, error_message: string): PlayTime | null => {
-    const inp: string | null = prompt(input_message);
-    if (inp === null) return null
-    
-    const playtime = PlayTime.try_from_string(inp);
-    if (playtime === null) alert(error_message);
-    
-    return playtime
+export const jump_saved_time = (video: HTMLVideoElement, id: string, confirm: (time: PlayTime) => boolean): boolean => {
+    const playtime = load_playtime(id);
+    if (playtime === null || !confirm(playtime)) return false;
+    absolute_jump(video, playtime); return true;
 };
