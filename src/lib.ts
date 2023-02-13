@@ -1,5 +1,7 @@
 const
     COOKIE_AGE_DAYS     = 1,
+    REWIND_DETECT_MIN_SECS       = 30,
+    REWIND_DETECT_DISTANCE_SECS  = 600,
     INTERVAL_DELAY_SECS = 10;
 
 
@@ -9,6 +11,8 @@ const
 const if_not_null = <T, U>(value: T | null, func: (value: T) => U): U | null => {
     return (value !== null) ? func(value) : null
 };
+
+
 
 // Time class
 
@@ -21,8 +25,16 @@ export class PlayTime {
         this.h = h; this.m = m; this.s = s;
     }
     
+    toString(): string {
+        return `PlayTime( ${this.fmt()} )`;
+    }
+    
     fmt(): string {
         return (this.h === 0) ? `${this.m}:${(this.s).toString().padStart(2,"0")}` : `${this.h}:${(this.m).toString().padStart(2,"0")}:${(this.s).toString().padStart(2,"0")}`
+    }
+    
+    distance(other: PlayTime): number {
+        return other.to_secs() - this.to_secs()
     }
     
     to_secs(): number {
@@ -43,7 +55,7 @@ export class PlayTime {
 
 
 
-/// Key and KeyMap class
+// Key and KeyMap class
 
 export class Key {
     code: string
@@ -106,7 +118,7 @@ export class Keymap {
         return true
     }
     
-    remove_listener(): boolean {
+    delete_listener(): boolean {
         if (this.listen_func === undefined) { return false }
         
         document.removeEventListener("keydown", this.listen_func.keydown);
@@ -145,8 +157,8 @@ const play = (video: HTMLVideoElement) => {
         (err: DOMException) => {
             if (err.message !== "The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22") throw err;
             
-            // !debug: DOMException occur in lib/play (https://github.com/SolAlyth/Savicon/issues/1)
-            console.log(`debug: DOMException occur in lib/play (https://github.com/SolAlyth/Savicon/issues/1)`);
+            // !debug: ignore DOMException (https://github.com/SolAlyth/Savicon/issues/1)
+            console.log(`debug: DOMException is ignored in lib/play (https://github.com/SolAlyth/Savicon/issues/1)`);
         }
     )
 };
@@ -179,13 +191,37 @@ export const speed_slower = (video: HTMLVideoElement, interval: number, min: num
     if (min + interval <= video.playbackRate) video.playbackRate -= interval;
 };
 
-const save_playtime = (video: HTMLVideoElement, id: string) => {
-    document.cookie = `${id}=${Math.floor(video.currentTime)}; Max-age=${86400*COOKIE_AGE_DAYS}`;
+
+
+// Save / Load
+
+const save_playtime = (video: HTMLVideoElement, id: string, rewind_confirm: (beforept: PlayTime) => boolean) => {
+    const video_playtime = PlayTime.from_secs(Math.floor(video.currentTime));
+    
+    const before_playtime = load_playtime(id);
+    if (before_playtime !== null && video_playtime.to_secs() < REWIND_DETECT_MIN_SECS && video_playtime.distance(before_playtime) < -REWIND_DETECT_DISTANCE_SECS && rewind_confirm(before_playtime)) {
+        absolute_jump(video, before_playtime); return
+    }
+    
+    document.cookie = `${id}=${video_playtime.to_secs()}; Max-age=${86400*COOKIE_AGE_DAYS}`;
+    
+    // !debug: Save Observe
+    console.log(`Save: ${video_playtime}`);
 };
 
-export const create_save_cycle = (video: HTMLVideoElement, id: string) => {
-    setInterval(() => { save_playtime(video, id); }, 1000*INTERVAL_DELAY_SECS);
+let save_interval_id_map: Map<string, number> = new Map();
+
+export const create_save_cycle = (video: HTMLVideoElement, id: string, rewind_confirm: (beforept: PlayTime) => boolean): boolean => {
+    if (save_interval_id_map.has(id)) return false;
+    const interval_id = window.setInterval(() => save_playtime(video, id, rewind_confirm), 1000*INTERVAL_DELAY_SECS);
+    save_interval_id_map.set(id, interval_id); return true
 };
+
+export const delete_save_cycle = (id: string): boolean => {
+    const interval_id = save_interval_id_map.get(id);
+    if (interval_id === undefined) return false;
+    clearInterval(interval_id); return true
+}
 
 const load_playtime = (id: string): PlayTime | null => {
     const match_result = (document.cookie).match(`${id}=([0-9]+)`);

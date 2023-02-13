@@ -2,23 +2,31 @@ from re import sub, findall
 from subprocess import run as subprocess_run
 
 
-# "// !debug: (Debug-Name)" が付いた行を削除して src/tmp にコピー
+# "// !debug: (Debug-name)", "// !test: (Test-name)" が付いた行を削除して src/tmp にコピー
 
 debug_regexp = "\n *// !debug: (.*)\n.*"
+test_regexp = "\n *// !test: (.*)\n.*"
 
-def delete_debug_and_copy(filename):
+def delete_and_copy(filename):
     with open(f"./src/{filename}.ts", encoding="utf-8") as tsf:
         ts = tsf.read()
     with open(f"./src/tmp/{filename}.ts", "w", encoding="utf-8") as tmpf:
-        delete_lines = findall(debug_regexp, ts)
-        print(f"{filename}: find {len(delete_lines)} lines ... {delete_lines}")
+        debug_lines = findall(debug_regexp, ts)
+        test_lines = findall(test_regexp, ts)
         
-        tmpf.write(
-            sub(debug_regexp, "", ts)
-        )
+        print(f"{filename}.ts:")
+        print(f"    Debug:")
+        [print(f"      - {line}") for line in debug_lines]
+        print()
+        print(f"    Test:")
+        [print(f"      - {line}") for line in test_lines]
+        
+        ts = sub(debug_regexp, "", ts)
+        ts = sub(test_regexp, "", ts)
+        tmpf.write(ts)
 
-print("debug lines:")
-[[print("    ", end=""), delete_debug_and_copy(filename)] for filename in ["main", "lib"]]
+print("debug/test lines:")
+[(delete_and_copy(filename), print()) for filename in ["main", "lib"]]
 print("")
 
 

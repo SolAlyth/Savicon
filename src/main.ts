@@ -65,7 +65,7 @@ export const main = (window: { savicon_running_flag: boolean | undefined }): boo
     );
     
     keymap.create_listener();
-    create_save_cycle(video, lesson_id);
+    create_save_cycle(video, lesson_id, (beforept) => confirm(`長時間の前方向のジャンプを検出しました。\n${beforept.fmt()} に戻りますか？`));
     
     return true
 }
