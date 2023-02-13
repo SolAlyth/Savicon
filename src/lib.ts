@@ -199,8 +199,15 @@ const save_playtime = (video: HTMLVideoElement, id: string, rewind_confirm: (bef
     const video_playtime = PlayTime.from_secs(Math.floor(video.currentTime));
     
     const before_playtime = load_playtime(id);
-    if (before_playtime !== null && video_playtime.to_secs() < REWIND_DETECT_MIN_SECS && video_playtime.distance(before_playtime) < -REWIND_DETECT_DISTANCE_SECS && rewind_confirm(before_playtime)) {
-        absolute_jump(video, before_playtime); return
+    
+    // !test: Rewind condition test
+    if (before_playtime !== null) console.log(`playtime: ${video_playtime.to_secs()}\ndinstance: ${video_playtime.distance(before_playtime)}`);
+    
+    if (before_playtime !== null && video_playtime.to_secs() < REWIND_DETECT_MIN_SECS && video_playtime.distance(before_playtime) < -REWIND_DETECT_DISTANCE_SECS) {
+        delete_save_cycle(id);
+        const rewind = rewind_confirm(before_playtime);
+        create_save_cycle(video, id, rewind_confirm);
+        if (rewind) { absolute_jump(video, before_playtime); return }
     }
     
     document.cookie = `${id}=${video_playtime.to_secs()}; Max-age=${86400*COOKIE_AGE_DAYS}`;
@@ -220,7 +227,9 @@ export const create_save_cycle = (video: HTMLVideoElement, id: string, rewind_co
 export const delete_save_cycle = (id: string): boolean => {
     const interval_id = save_interval_id_map.get(id);
     if (interval_id === undefined) return false;
-    clearInterval(interval_id); return true
+    clearInterval(interval_id);
+    save_interval_id_map.delete(id);
+    return true
 }
 
 const load_playtime = (id: string): PlayTime | null => {
