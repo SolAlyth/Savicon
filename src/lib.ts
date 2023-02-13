@@ -49,9 +49,6 @@ export class Key {
     code: string
     shift: boolean
     
-    constructor(code: string);
-    constructor(code: string, shift: boolean);
-    
     constructor(code: string, shift?: boolean) {
         this.code = code;
         this.shift = shift ?? false;
@@ -62,12 +59,12 @@ export class Key {
     }
 }
 
-type KeyConfig = [Key, () => void]
+type KeyConfig = [Key, () => void, (() => void)?]
 
 export class Keymap {
     // keymap は Map にしたかったけど Map.get(Key) ができないので Array
     keymap: KeyConfig[]
-    listen_func: ((e: KeyboardEvent) => void) | undefined
+    listen_func: { keydown: (e: KeyboardEvent) => void, keyup: (e: KeyboardEvent) => void } | undefined
     
     constructor(...keymaps: KeyConfig[]) {
         this.keymap = keymaps;
@@ -81,12 +78,20 @@ export class Keymap {
     create_listener(): boolean {
         if (this.listen_func !== undefined) { return false }
         
-        this.listen_func = (e: KeyboardEvent) => {
-            const inpkey = new Key(e.code, e.shiftKey);
-            const keycfg = this.has(inpkey);
-            if (keycfg !== null) keycfg[1]();
+        this.listen_func = {
+            keydown: (e: KeyboardEvent) => {
+                const inpkey = new Key(e.code, e.shiftKey);
+                const keycfg = this.has(inpkey);
+                if (keycfg !== null) keycfg[1]();
+            },
+            keyup: (e: KeyboardEvent) => {
+                const inpkey = new Key(e.code, e.shiftKey);
+                const keycfg = this.has(inpkey);
+                if (keycfg !== null && keycfg[2] !== undefined) keycfg[2]();
+            }
         };
-        document.addEventListener("keydown", this.listen_func);
+        document.addEventListener("keydown", this.listen_func.keydown);
+        document.addEventListener("keyup", this.listen_func.keyup);
         
         return true
     }
@@ -94,7 +99,8 @@ export class Keymap {
     remove_listener(): boolean {
         if (this.listen_func === undefined) { return false }
         
-        document.removeEventListener("keydown", this.listen_func);
+        document.removeEventListener("keydown", this.listen_func.keydown);
+        document.removeEventListener("keyup", this.listen_func.keyup);
         this.listen_func = undefined;
         
         return true
@@ -147,11 +153,19 @@ export const relative_jump = (video: HTMLVideoElement, time: number) => {
     video.currentTime += time;
 };
 
-export const speed_faster = (video: HTMLVideoElement, max: number, interval: number) => {
+export const get_speed = (video: HTMLVideoElement): number => {
+    return video.playbackRate
+}
+
+export const set_speed = (video: HTMLVideoElement, speed: number) => {
+    video.playbackRate = speed;
+}
+
+export const speed_faster = (video: HTMLVideoElement, interval: number, max: number) => {
     if (video.playbackRate <= max - interval) video.playbackRate += interval;
 };
 
-export const speed_slower = (video: HTMLVideoElement, min: number, interval: number) => {
+export const speed_slower = (video: HTMLVideoElement, interval: number, min: number) => {
     if (min + interval <= video.playbackRate) video.playbackRate -= interval;
 };
 
