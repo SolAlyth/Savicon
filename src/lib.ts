@@ -82,12 +82,22 @@ export class Keymap {
             keydown: (e: KeyboardEvent) => {
                 const inpkey = new Key(e.code, e.shiftKey);
                 const keycfg = this.has(inpkey);
-                if (keycfg !== null) keycfg[1]();
+                if (keycfg !== null) {
+                    keycfg[1]();
+                    
+                    // !debug: Keydown Observe
+                    console.log(`Keydown: ${inpkey.code}`);
+                }
             },
             keyup: (e: KeyboardEvent) => {
                 const inpkey = new Key(e.code, e.shiftKey);
                 const keycfg = this.has(inpkey);
-                if (keycfg !== null && keycfg[2] !== undefined) keycfg[2]();
+                if (keycfg !== null && keycfg[2] !== undefined) {
+                    keycfg[2]();
+                    
+                    // !debug: Keyup Observe
+                    console.log(`Keyup: ${inpkey.code}`);
+                }
             }
         };
         document.addEventListener("keydown", this.listen_func.keydown);
