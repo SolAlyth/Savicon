@@ -26,7 +26,7 @@ export class PlayTime {
     }
     
     toString(): string {
-        return `PlayTime( ${this.fmt()} )`;
+        return `PlayTime(${this.fmt()})`;
     }
     
     fmt(): string {
@@ -200,10 +200,7 @@ const save_playtime = (video: HTMLVideoElement, id: string, rewind_confirm: (bef
     
     const before_playtime = load_playtime(id);
     
-    // !test: Rewind condition test
-    if (before_playtime !== null) console.log(`playtime: ${video_playtime.to_secs()}\ndinstance: ${video_playtime.distance(before_playtime)}`);
-    
-    if (before_playtime !== null && video_playtime.to_secs() < REWIND_DETECT_MIN_SECS && video_playtime.distance(before_playtime) < -REWIND_DETECT_DISTANCE_SECS) {
+    if (before_playtime !== null && video_playtime.to_secs() < REWIND_DETECT_MIN_SECS && video_playtime.distance(before_playtime) > REWIND_DETECT_DISTANCE_SECS) {
         delete_save_cycle(id);
         const rewind = rewind_confirm(before_playtime);
         create_save_cycle(video, id, rewind_confirm);
