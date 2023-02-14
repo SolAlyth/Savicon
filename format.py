@@ -4,25 +4,34 @@ from subprocess import run as subprocess_run
 
 # "// !debug: (Debug-name)", "// !test: (Test-name)" が付いた行を削除して src/tmp にコピー
 
-debug_regexp = "\n *// !debug: (.*)\n.*"
-test_regexp = "\n *// !test: (.*)\n.*"
+block_debug_regexp = "\n *// !debug-start: (.*)\n(.*\n)* *// !debug-end: (\\1) *"
+line_debug_regexp = "\n *// !debug: (.*)\n.*"
+block_test_regexp = "\n *// !test-start: (.*)\n(.*\n)* *// !test-end: (\\1) *"
+line_test_regexp = "\n *// !test: (.*)\n.*"
 
 def delete_and_copy(filename):
     with open(f"./src/{filename}.ts", encoding="utf-8") as tsf:
         ts = tsf.read()
     with open(f"./src/tmp/{filename}.ts", "w", encoding="utf-8") as tmpf:
-        debug_lines = findall(debug_regexp, ts)
-        test_lines = findall(test_regexp, ts)
+        block_debug_names = findall(block_debug_regexp, ts)
+        line_debug_names = findall(line_debug_regexp, ts)
+        
+        block_test_names = findall(block_test_regexp, ts)
+        line_test_names = findall(line_test_regexp, ts)
         
         print(f"{filename}.ts:")
         print(f"    Debug:")
-        [print(f"      - {line}") for line in debug_lines]
+        [print(f"      + {line[0]}") for line in block_debug_names]
+        [print(f"      - {line}") for line in line_debug_names]
         print()
         print(f"    Test:")
-        [print(f"      - {line}") for line in test_lines]
+        [print(f"      + {line[0]}") for line in block_test_names]
+        [print(f"      - {line}") for line in line_test_names]
         
-        ts = sub(debug_regexp, "", ts)
-        ts = sub(test_regexp, "", ts)
+        ts = sub(block_debug_regexp, "", ts)
+        ts = sub(line_debug_regexp, "", ts)
+        ts = sub(block_test_regexp, "", ts)
+        ts = sub(line_test_regexp, "", ts)
         tmpf.write(ts)
 
 print("debug/test lines:")

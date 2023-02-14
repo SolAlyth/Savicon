@@ -14,6 +14,41 @@ const if_not_null = <T, U>(value: T | null, func: (value: T) => U): U | null => 
 
 
 
+// Option class
+
+class Option<T> {
+    private value: T | undefined
+    
+    private constructor(value?: T) {
+        this.value = value;
+    }
+    
+    static from_undef<T>(value: T | undefined): Option<T> {
+        return new Option(value)
+    }
+    
+    static some<T>(value: T): Option<T> {
+        return new Option(value)
+    }
+    
+    static none<T>(): Option<T> {
+        return new Option<T>()
+    }
+    
+    is_some(): boolean {
+        return this.value !== undefined
+    }
+    
+    is_none(): boolean {
+        return this.value === undefined
+    }
+    
+    unwrap(): T | undefined {
+        return this.value
+    }
+}
+
+
 // Time class
 
 export class PlayTime {
@@ -59,19 +94,21 @@ export class PlayTime {
 
 export class Key {
     code: string
-    shift: boolean
+    shift: Option<boolean>
     
     constructor(code: string, shift?: boolean) {
         this.code = code;
-        this.shift = shift ?? false;
+        this.shift = Option.from_undef(shift);
     }
     
     eq(other: Key): boolean {
-        return (this.code === other.code) && (this.shift === other.shift)
+        if (this.code !== other.code) return false;
+        if (this.shift.is_none() || other.shift.is_none()) return true;
+        return (this.shift.unwrap() as boolean) === (other.shift.unwrap() as boolean)
     }
 }
 
-type KeyConfig = [Key, () => void, (() => void)?]
+type KeyConfig = [Key, (() => void) | null, (() => void) | null]
 
 export class Keymap {
     // keymap は Map にしたかったけど Map.get(Key) ができないので Array
@@ -94,7 +131,7 @@ export class Keymap {
             keydown: (e: KeyboardEvent) => {
                 const inpkey = new Key(e.code, e.shiftKey);
                 const keycfg = this.has(inpkey);
-                if (keycfg !== null) {
+                if (keycfg !== null && keycfg[1] !== null) {
                     keycfg[1]();
                     
                     // !debug: Keydown Observe
@@ -104,7 +141,7 @@ export class Keymap {
             keyup: (e: KeyboardEvent) => {
                 const inpkey = new Key(e.code, e.shiftKey);
                 const keycfg = this.has(inpkey);
-                if (keycfg !== null && keycfg[2] !== undefined) {
+                if (keycfg !== null && keycfg[2] !== null) {
                     keycfg[2]();
                     
                     // !debug: Keyup Observe
