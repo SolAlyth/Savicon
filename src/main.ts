@@ -97,11 +97,7 @@ export const main = (window: { savicon_running_flag: boolean | undefined }): boo
         }, null ]
         
         // !test-start: fastplay
-        ,
-        [ new Key("ShiftLeft", true), () => fastplay.on(), null ],
-        [ new Key("ShiftKey", false), null, () => fastplay.off() ],
-        [ new Key("ShiftLeft", true), () => fastplay.on(), null ],
-        [ new Key("ShiftKey", false), null, () => fastplay.off() ]
+        ,[ new Key("KeyM"), () => fastplay.on(), () => fastplay.off() ],
         // !test-end: fastplay
     );
     

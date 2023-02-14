@@ -101,6 +101,10 @@ export class Key {
         this.shift = Option.from_undef(shift);
     }
     
+    static from_keyboardevent(e: KeyboardEvent) {
+        return new Key(e.code, e.shiftKey)
+    }
+    
     eq(other: Key): boolean {
         if (this.code !== other.code) return false;
         if (this.shift.is_none() || other.shift.is_none()) return true;
@@ -129,7 +133,7 @@ export class Keymap {
         
         this.listen_func = {
             keydown: (e: KeyboardEvent) => {
-                const inpkey = new Key(e.code, e.shiftKey);
+                const inpkey = Key.from_keyboardevent(e);
                 const keycfg = this.has(inpkey);
                 if (keycfg !== null && keycfg[1] !== null) {
                     keycfg[1]();
@@ -139,7 +143,7 @@ export class Keymap {
                 }
             },
             keyup: (e: KeyboardEvent) => {
-                const inpkey = new Key(e.code, e.shiftKey);
+                const inpkey = Key.from_keyboardevent(e);
                 const keycfg = this.has(inpkey);
                 if (keycfg !== null && keycfg[2] !== null) {
                     keycfg[2]();
