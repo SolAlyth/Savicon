@@ -65,7 +65,7 @@ export const main = (window: { savicon_running_flag: boolean | undefined }): boo
             if (playtime !== null) absolute_jump(video, playtime);
         } ]
         // !test: fastplay
-        ,[ new Key("ShiftLeft", true), () => { if (fast_flag) { speed_tmp = get_speed(video); set_speed(video, 10.0); fast_flag = true; } }, () => { set_speed(video, speed_tmp); fast_flag = false; } ],[ new Key("ShiftRight", true), () => { if (fast_flag) { speed_tmp = get_speed(video); set_speed(video, 10.0); fast_flag = true; } }, () => { set_speed(video, speed_tmp); fast_flag = false; } ]
+        ,[ new Key("ShiftLeft", true), () => { if (!fast_flag) { speed_tmp = get_speed(video); set_speed(video, 10.0); fast_flag = true; } }, () => { set_speed(video, speed_tmp); fast_flag = false; } ],[ new Key("ShiftRight", true), () => { if (!fast_flag) { speed_tmp = get_speed(video); set_speed(video, 10.0); fast_flag = true; } }, () => { set_speed(video, speed_tmp); fast_flag = false; } ]
     );
     
     keymap.create_listener();
