@@ -3,7 +3,7 @@ import {
     
     is_running, running, get_video_element,
     
-    play_toggle, absolute_jump, relative_jump, speed_faster, speed_slower,
+    play_toggle, absolute_jump, relative_jump, speed_faster, speed_slower, get_speed, set_speed,
     create_save_cycle, jump_saved_time
 } from "./lib";
 
@@ -52,6 +52,8 @@ export const main = (window: { savicon_running_flag: boolean | undefined }): boo
     
     jump_saved_time(video, lesson_id, (playtime) => { return confirm(`${playtime.fmt()} から再開しますか？`) });
     
+    let fast_flag: boolean = false, speed_tmp: number;
+    
     const keymap = new Keymap(
         [ new Key("Space"), () => play_toggle(video) ],
         [ new Key("ArrowLeft"), () => relative_jump(video, -5) ],
@@ -62,6 +64,8 @@ export const main = (window: { savicon_running_flag: boolean | undefined }): boo
             const playtime = input_playtime("ジャンプ先の時間を入力してください。\nh:mm:ss または mm:ss の形式で入力してください。", "Error: 正しくない形式で入力されている可能性があります。");
             if (playtime !== null) absolute_jump(video, playtime);
         } ]
+        // !test: fastplay
+        ,[ new Key("ShiftLeft", true), () => { if (fast_flag) { speed_tmp = get_speed(video); set_speed(video, 10.0); fast_flag = true; } }, () => { set_speed(video, speed_tmp); fast_flag = false; } ],[ new Key("ShiftRight", true), () => { if (fast_flag) { speed_tmp = get_speed(video); set_speed(video, 10.0); fast_flag = true; } }, () => { set_speed(video, speed_tmp); fast_flag = false; } ]
     );
     
     keymap.create_listener();
