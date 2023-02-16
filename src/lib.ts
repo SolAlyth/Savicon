@@ -316,7 +316,7 @@ export class VideoController {
     load_cookie(): PlayTime | null {
         const ptl = document.cookie.split("; ").flatMap((cookie) => {
             const result = cookie.match(`^${this.id}=([0-9]+)$`);
-            return (result !== null) ? [PlayTime.from_secs(Number(result[0]))] : []
+            return (result !== null) ? [PlayTime.from_secs(Number(result[1]))] : []
         });
         
         return ptl[0] ?? null;
