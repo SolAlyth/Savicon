@@ -154,23 +154,25 @@ export class Keymap {
         this.listen_func = {
             keydown: (e: KeyboardEvent) => {
                 const inpkey = Key.from_KeyboardEvent(e);
-                const keycfg = this.has(inpkey);
-                if (keycfg !== null && keycfg[1] !== null) {
-                    // !debug: Keydown Observe
-                    console.log(`Keydown: ${inpkey}`);
-                    
-                    keycfg[1]();
-                }
+                if_not_null(this.has(inpkey), (keycfg) => {
+                    if_not_null(keycfg[1], (func) => {
+                        // !debug: Keydown Observe
+                        console.log(`Keydown: ${inpkey}`);
+                        
+                        func();
+                    });
+                });
             },
             keyup: (e: KeyboardEvent) => {
                 const inpkey = Key.from_KeyboardEvent(e);
-                const keycfg = this.has(inpkey);
-                if (keycfg !== null && keycfg[2] !== null) {
-                    // !debug: Keyup Observe
-                    console.log(`Keyup: ${inpkey}`);
-                    
-                    keycfg[2]();
-                }
+                if_not_null(this.has(inpkey), (keycfg) => {
+                    if_not_null(keycfg[2], (func) => {
+                        // !debug: Keyup Observe
+                        console.log(`Keyup: ${inpkey}`);
+                        
+                        func();
+                    });
+                });
             }
         };
         document.addEventListener("keydown", this.listen_func.keydown);
