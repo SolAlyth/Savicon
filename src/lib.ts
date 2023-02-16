@@ -157,7 +157,7 @@ export class Keymap {
                 const keycfg = this.has(inpkey);
                 if (keycfg !== null && keycfg[1] !== null) {
                     // !debug: Keydown Observe
-                    console.log(`Keydown: ${inpkey.code}`);
+                    console.log(`Keydown: ${inpkey}`);
                     
                     keycfg[1]();
                 }
@@ -167,7 +167,7 @@ export class Keymap {
                 const keycfg = this.has(inpkey);
                 if (keycfg !== null && keycfg[2] !== null) {
                     // !debug: Keyup Observe
-                    console.log(`Keyup: ${inpkey.code}`);
+                    console.log(`Keyup: ${inpkey}`);
                     
                     keycfg[2]();
                 }
@@ -211,7 +211,7 @@ export const get_video_element = (index: number): HTMLVideoElement | null => {
 // Commands
 
 export class VideoController {
-    private readonly video: HTMLVideoElement;
+    private video: HTMLVideoElement;
     private readonly id: string;
     
     fastplay_speed: number = 2.0;
