@@ -15,7 +15,7 @@ const hostname_check = (): boolean => {
 };
 
 const get_lesson_id = (): string | null => {
-    const id_result = (location.pathname).match(/^kenjaplus-satenet-1H0\/subjects\/([0-9]+)\/courses\/([0-9]+)\/materials\/([0-9]+)$/);
+    const id_result = (location.pathname).match(/^\/kenjaplus-satenet-1H0\/subjects\/([0-9]+)\/courses\/([0-9]+)\/materials\/([0-9]+)$/);
     return if_not_null(id_result, (idarr) => `${idarr[1]}-${idarr[2]}-${idarr[3]}`)
 };
 
