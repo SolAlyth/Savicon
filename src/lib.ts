@@ -113,6 +113,13 @@ export class Key {
         this.shift = Option.from_undef(shift);
     }
     
+    toString(): string {
+        return this.shift.optmatch({
+            some: (sft) => `Key(${this.code}, shift=${sft})`,
+            none: () => `Key(${this.code})`
+        });
+    }
+    
     static from_KeyboardEvent(e: KeyboardEvent) {
         return new Key(e.code, e.shiftKey);
     }
@@ -121,21 +128,20 @@ export class Key {
         if (this.code !== other.code) return false;
         return this.shift.if_all_some([this.shift, other.shift], {
             all: (thisshift, othershift) => thisshift === othershift,
-            other: () => false
+            other: () => true
         });
     }
 }
 
-type KeyConfig = [Key, (() => void) | null, (() => void) | null]
+type KeyConfig = [Key, (() => void) | null, (() => void) | null];
 
 export class Keymap {
     // keymap は Map にしたかったけど Map.get(Key) ができないので Array
     keymap: KeyConfig[];
-    listen_func: { keydown: (e: KeyboardEvent) => void, keyup: (e: KeyboardEvent) => void } | undefined;
+    listen_func: { keydown: (e: KeyboardEvent) => void, keyup: (e: KeyboardEvent) => void } | undefined = undefined;
     
     constructor(...keymaps: KeyConfig[]) {
         this.keymap = keymaps;
-        this.listen_func = undefined;
     }
     
     has(key: Key): KeyConfig | null {
