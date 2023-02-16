@@ -226,8 +226,9 @@ export class VideoController {
     cookie_age_days: number = 1;
     
     judge_rewind: (bpt: PlayTime) => boolean = () => false;
-    private before_playtime: PlayTime | undefined = undefined;
     rewind_min_secs: number = 300;
+    private save_pause: boolean = false;
+    private before_playtime: PlayTime | undefined = undefined;
     
     
     private get speed(): number {
@@ -325,6 +326,7 @@ export class VideoController {
     }
     
     save_cookie() {
+        this.before_playtime = this.playtime;
         document.cookie = `${this.id}=${this.playtime.to_secs()}; Max-age=${86400*this.cookie_age_days}`;
         
         // !debug: Save Observe
@@ -336,7 +338,9 @@ export class VideoController {
         if (pt === null || bpt === undefined) return;
         
         if (pt.to_secs() < this.cycle_interval_secs && bpt.distance(pt) < -this.rewind_min_secs) {
+            this.save_pause = true;
             if (this.judge_rewind(bpt)) this.absolute_jump(bpt);
+            this.save_pause = false;
         }
     }
     
@@ -344,8 +348,9 @@ export class VideoController {
         if (this.cycle_id.is_some()) return false;
         
         const func = () => {
-            this.save_cookie();
+            if (this.save_pause) return;
             this.check_rewind();
+            this.save_cookie();
         }
         
         const interval_id = window.setInterval(func, 1000*this.cycle_interval_secs);
