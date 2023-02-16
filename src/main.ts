@@ -1,17 +1,12 @@
 import {
+    if_null, if_not_null,
+    
     Key, Keymap, PlayTime,
     
     is_running, running, get_video_element,
     
-    play_toggle, absolute_jump, relative_jump, speed_faster, speed_slower, get_speed, set_speed,
-    create_save_cycle, jump_saved_time
+    VideoController
 } from "./lib";
-
-
-
-const if_not_null = <T, U>(value: T | null, func: (value: T) => U): U | null => {
-    return (value !== null) ? func(value) : null
-};
 
 
 
@@ -24,46 +19,15 @@ const get_lesson_id = (): string | null => {
     return if_not_null(id_result, (idarr) => `${idarr[1]}-${idarr[2]}-${idarr[3]}`)
 };
 
-const input_playtime = (input_message: string, error_message: string): PlayTime | null => {
-    const inp: string | null = prompt(input_message);
-    if (inp === null) return null;
+const input_playtime = (): PlayTime | null => {
+    const inp: string | null = prompt("ジャンプ先の時間を入力してください。\nh:mm:ss または mm:ss の形式で入力してください。");
     
-    const playtime = PlayTime.try_from_string(inp);
-    if (playtime === null) alert(error_message);
-    
-    return playtime
+    return if_not_null(inp, (inpstr) => {
+        return if_null(PlayTime.try_from_string(inpstr), () => {
+            alert("Error: 正しくない形式で入力されている可能性があります。");
+        });
+    });
 };
-
-
-
-class FastPlay {
-    video: HTMLVideoElement
-    toggle: boolean
-    speed_tmp: number
-    
-    constructor(video: HTMLVideoElement) {
-        this.video = video;
-        this.toggle = false;
-        this.speed_tmp = 0;
-    }
-    
-    on(): boolean {
-        if (this.toggle) return false;
-        
-        this.speed_tmp = get_speed(this.video);
-        set_speed(this.video, 10.0);
-        this.toggle = true;
-        return true
-    }
-    
-    off(): boolean {
-        if (!this.toggle) return false;
-        
-        set_speed(this.video, this.speed_tmp);
-        this.toggle = false;
-        return true
-    }
-}
 
 
 
@@ -81,28 +45,38 @@ export const main = (window: { savicon_running_flag: boolean | undefined }): boo
     
     running(window);
     
-    jump_saved_time(video, lesson_id, (playtime) => { return confirm(`${playtime.fmt()} から再開しますか？`) });
     
-    const fastplay = new FastPlay(video);
+    const vc = new VideoController(video, lesson_id);
+    
+    vc.fastplay_speed = 10.0;
+    vc.cycle_interval_secs = 10;
+    vc.cookie_age_days = 30;
+    vc.judge_rewind = (bpt): boolean => {
+        return confirm(`長時間の前方向のジャンプを検出しました。\n${bpt.fmt()} に戻りますか？`);
+    }
+    
+    const saved_playtime = vc.load_cookie();
+    if_not_null(saved_playtime, (saved_pt) => {
+        const result = confirm(`${saved_pt.fmt()} から再開しますか？`);
+        if (result) vc.absolute_jump(saved_pt);
+    });
     
     const keymap = new Keymap(
-        [ new Key("Space"), () => play_toggle(video), null],
-        [ new Key("ArrowLeft"), () => relative_jump(video, -5), null ],
-        [ new Key("ArrowRight"), () => relative_jump(video, 5), null ],
-        [ new Key("Comma", true), () => speed_slower(video, 0.2, 0.8), null ],
-        [ new Key("Period", true), () => speed_faster(video, 0.2, 2.0), null ],
-        [ new Key("KeyJ"), () => {
-            const playtime = input_playtime("ジャンプ先の時間を入力してください。\nh:mm:ss または mm:ss の形式で入力してください。", "Error: 正しくない形式で入力されている可能性があります。");
-            if (playtime !== null) absolute_jump(video, playtime);
-        }, null ]
+        [ new Key("Space"),              vc.play_toggle,            null ],
+        [ new Key("ArrowLeft"),    () => vc.relative_jump(-5),      null ],
+        [ new Key("ArrowRight"),   () => vc.relative_jump(5),       null ],
+        [ new Key("Comma", true),  () => vc.speed_slower(0.2, 0.8), null ],
+        [ new Key("Period", true), () => vc.speed_faster(0.2, 2.0), null ],
+        [ new Key("KeyJ"), () => { if_not_null(input_playtime(), (pt) => vc.absolute_jump(pt)); }, null ]
         
         // !test-start: fastplay
-        ,[ new Key("KeyM"), () => fastplay.on(), () => fastplay.off() ],
+        ,[ new Key("KeyM"), () => vc.fastplay_on(), () => vc.fastplay_off() ],
         // !test-end: fastplay
     );
     
     keymap.create_listener();
-    create_save_cycle(video, lesson_id, (beforept) => confirm(`長時間の前方向のジャンプを検出しました。\n${beforept.fmt()} に戻りますか？`));
+    
+    vc.create_save_cycle();
     
     return true
 };

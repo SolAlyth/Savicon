@@ -1,15 +1,13 @@
-const
-    COOKIE_AGE_DAYS     = 1,
-    REWIND_DETECT_MIN_SECS       = 30,
-    REWIND_DETECT_DISTANCE_SECS  = 600,
-    INTERVAL_DELAY_SECS = 10;
-
-
-
 // if_not_null function
 
-const if_not_null = <T, U>(value: T | null, func: (value: T) => U): U | null => {
-    return (value !== null) ? func(value) : null
+export const if_null = <T>(value: NonNullable<T> | null, func: () => void): T | null => {
+    const f = () => { func(); return null; };
+    return (value !== null) ? value : f();
+    
+};
+
+export const if_not_null = <T, U>(value: NonNullable<T> | null, func: (value: T) => U): U | null => {
+    return (value !== null) ? func(value) : null;
 };
 
 
@@ -17,46 +15,55 @@ const if_not_null = <T, U>(value: T | null, func: (value: T) => U): U | null => 
 // Option class
 
 class Option<T> {
-    private value: T | undefined
+    private value: T | undefined;
     
-    private constructor(value?: T) {
+    private constructor(value?: T | undefined) {
         this.value = value;
     }
     
     static from_undef<T>(value: T | undefined): Option<T> {
-        return new Option(value)
+        return new Option(value);
     }
     
     static some<T>(value: T): Option<T> {
-        return new Option(value)
+        return new Option(value);
     }
     
     static none<T>(): Option<T> {
-        return new Option<T>()
+        return new Option<T>();
     }
     
     is_some(): boolean {
-        return this.value !== undefined
+        return this.value !== undefined;
     }
     
     is_none(): boolean {
-        return this.value === undefined
+        return this.value === undefined;
     }
     
-    unwrap(): T | undefined {
-        return this.value
+    unwrap(): T {
+        return this.value as T
+    }
+    
+    optmatch<U>(func: {some: (some_value: T) => U, none: () => U}): U {
+        return (this.value !== undefined) ? func.some(this.value) : func.none();
+    }
+    
+    if_all_some<U>(opts: Option<T>[], func: { all: (...some_values: T[]) => U, other: () => U }): U {
+        return (opts.every(opt => opt.is_some())) ? func.all(...opts.map(opt => opt.unwrap())) : func.other()
     }
 }
+
 
 
 // Time class
 
 export class PlayTime {
-    h: number
-    m: number
-    s: number
+    h: number;
+    m: number;
+    s: number;
     
-    constructor(h: number, m: number, s: number) {
+    private constructor(h: number, m: number, s: number) {
         this.h = h; this.m = m; this.s = s;
     }
     
@@ -65,26 +72,31 @@ export class PlayTime {
     }
     
     fmt(): string {
-        return (this.h === 0) ? `${this.m}:${(this.s).toString().padStart(2,"0")}` : `${this.h}:${(this.m).toString().padStart(2,"0")}:${(this.s).toString().padStart(2,"0")}`
+        return (this.h === 0) ? `${this.m}:${(this.s).toString().padStart(2,"0")}`
+                              : `${this.h}:${(this.m).toString().padStart(2,"0")}:${(this.s).toString().padStart(2,"0")}`;
     }
     
     distance(other: PlayTime): number {
-        return other.to_secs() - this.to_secs()
+        return other.to_secs() - this.to_secs();
     }
     
     to_secs(): number {
-        return 3600*this.h + 60*this.m + this.s
+        return 3600*this.h + 60*this.m + this.s;
+    }
+    
+    add(time: number): PlayTime {
+        return PlayTime.from_secs(this.to_secs() + time);
     }
     
     static from_secs(from: number): PlayTime {
-        const s = from % 60, m = (from - s)/60 % 60, h = (from - 60*m - s)/3600;
-        return new PlayTime(h,m,s)
+        const sec = Math.max(Math.floor(from), 0);
+        const s = sec % 60, m = (sec - s)/60 % 60, h = (sec - 60*m - s)/3600;
+        return new PlayTime(h,m,s);
     }
     
     static try_from_string(from: string): PlayTime | null {
-        const time = from.match(/(([1-9]):)?([0-5]?[0-9]):([0-5]?[0-9])/);
-        if (time === null) { return null }
-        return new PlayTime(Number(time[2] ?? 0), Number(time[3]), Number(time[4]))
+        const time_match_result = from.match(/^(([1-9]):)?([0-5]?[0-9]):([0-5]?[0-9])$/);
+        return if_not_null(time_match_result, (timearr) => new PlayTime(Number(timearr[2] ?? 0), Number(timearr[3]), Number(timearr[4])));
     }
 }
 
@@ -93,22 +105,24 @@ export class PlayTime {
 // Key and KeyMap class
 
 export class Key {
-    code: string
-    shift: Option<boolean>
+    code: string;
+    shift: Option<boolean>;
     
     constructor(code: string, shift?: boolean) {
         this.code = code;
         this.shift = Option.from_undef(shift);
     }
     
-    static from_keyboardevent(e: KeyboardEvent) {
-        return new Key(e.code, e.shiftKey)
+    static from_KeyboardEvent(e: KeyboardEvent) {
+        return new Key(e.code, e.shiftKey);
     }
     
     eq(other: Key): boolean {
         if (this.code !== other.code) return false;
-        if (this.shift.is_none() || other.shift.is_none()) return true;
-        return (this.shift.unwrap() as boolean) === (other.shift.unwrap() as boolean)
+        return this.shift.if_all_some([this.shift, other.shift], {
+            all: (thisshift, othershift) => thisshift === othershift,
+            other: () => false
+        });
     }
 }
 
@@ -116,8 +130,8 @@ type KeyConfig = [Key, (() => void) | null, (() => void) | null]
 
 export class Keymap {
     // keymap は Map にしたかったけど Map.get(Key) ができないので Array
-    keymap: KeyConfig[]
-    listen_func: { keydown: (e: KeyboardEvent) => void, keyup: (e: KeyboardEvent) => void } | undefined
+    keymap: KeyConfig[];
+    listen_func: { keydown: (e: KeyboardEvent) => void, keyup: (e: KeyboardEvent) => void } | undefined;
     
     constructor(...keymaps: KeyConfig[]) {
         this.keymap = keymaps;
@@ -125,48 +139,48 @@ export class Keymap {
     }
     
     has(key: Key): KeyConfig | null {
-        return this.keymap.find(keycfg => keycfg[0].eq(key)) ?? null
+        return this.keymap.find(keycfg => keycfg[0].eq(key)) ?? null;
     }
     
     create_listener(): boolean {
-        if (this.listen_func !== undefined) { return false }
+        if (this.listen_func !== undefined) return false;
         
         this.listen_func = {
             keydown: (e: KeyboardEvent) => {
-                const inpkey = Key.from_keyboardevent(e);
+                const inpkey = Key.from_KeyboardEvent(e);
                 const keycfg = this.has(inpkey);
                 if (keycfg !== null && keycfg[1] !== null) {
-                    keycfg[1]();
-                    
                     // !debug: Keydown Observe
                     console.log(`Keydown: ${inpkey.code}`);
+                    
+                    keycfg[1]();
                 }
             },
             keyup: (e: KeyboardEvent) => {
-                const inpkey = Key.from_keyboardevent(e);
+                const inpkey = Key.from_KeyboardEvent(e);
                 const keycfg = this.has(inpkey);
                 if (keycfg !== null && keycfg[2] !== null) {
-                    keycfg[2]();
-                    
                     // !debug: Keyup Observe
                     console.log(`Keyup: ${inpkey.code}`);
+                    
+                    keycfg[2]();
                 }
             }
         };
         document.addEventListener("keydown", this.listen_func.keydown);
         document.addEventListener("keyup", this.listen_func.keyup);
         
-        return true
+        return true;
     }
     
     delete_listener(): boolean {
-        if (this.listen_func === undefined) { return false }
+        if (this.listen_func === undefined) return false;
         
         document.removeEventListener("keydown", this.listen_func.keydown);
         document.removeEventListener("keyup", this.listen_func.keyup);
         this.listen_func = undefined;
         
-        return true
+        return true;
     }
 }
 
@@ -175,7 +189,7 @@ export class Keymap {
 // Check / Get
 
 export const is_running = (window: { savicon_running_flag: boolean | undefined } ): boolean => {
-    return typeof window.savicon_running_flag !== "undefined"
+    return typeof window.savicon_running_flag !== "undefined";
 };
 
 export const running = (window: { savicon_running_flag: boolean | undefined } ) => {
@@ -190,93 +204,157 @@ export const get_video_element = (index: number): HTMLVideoElement | null => {
 
 // Commands
 
-const play = (video: HTMLVideoElement) => {
-    if (video.readyState >= video.HAVE_FUTURE_DATA) video.play();
+export class VideoController {
+    private readonly video: HTMLVideoElement;
+    private readonly id: string;
     
-    video.play().then(
-        () => {},
-        (err: DOMException) => {
-            if (err.message !== "The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22") throw err;
-            
-            // !debug: ignore DOMException (https://github.com/SolAlyth/Savicon/issues/1)
-            console.log(`debug: DOMException is ignored in lib/play (https://github.com/SolAlyth/Savicon/issues/1)`);
-        }
-    )
-};
-
-export const play_toggle = (video: HTMLVideoElement) => {
-    if (video.paused) play(video); else video.pause();
-};
-
-export const absolute_jump = (video: HTMLVideoElement, playtime: PlayTime) => {
-    video.currentTime = playtime.to_secs();
-};
-
-export const relative_jump = (video: HTMLVideoElement, time: number) => {
-    video.currentTime += time;
-};
-
-export const get_speed = (video: HTMLVideoElement): number => {
-    return video.playbackRate
-}
-
-export const set_speed = (video: HTMLVideoElement, speed: number) => {
-    video.playbackRate = speed;
-}
-
-export const speed_faster = (video: HTMLVideoElement, interval: number, max: number) => {
-    if (video.playbackRate <= max - interval) video.playbackRate += interval;
-};
-
-export const speed_slower = (video: HTMLVideoElement, interval: number, min: number) => {
-    if (min + interval <= video.playbackRate) video.playbackRate -= interval;
-};
-
-
-
-// Save / Load
-
-const save_playtime = (video: HTMLVideoElement, id: string, rewind_confirm: (beforept: PlayTime) => boolean) => {
-    const video_playtime = PlayTime.from_secs(Math.floor(video.currentTime));
+    fastplay_speed: number = 2.0;
+    private fastplay_flag: boolean = false;
+    private fastplay_before_speed: number = 0;
     
-    const before_playtime = load_playtime(id);
+    cycle_interval_secs: number = 60;
+    private cycle_id: Option<number> = Option.none();
     
-    if (before_playtime !== null && video_playtime.to_secs() < REWIND_DETECT_MIN_SECS && video_playtime.distance(before_playtime) > REWIND_DETECT_DISTANCE_SECS) {
-        delete_save_cycle(id);
-        const rewind = rewind_confirm(before_playtime);
-        create_save_cycle(video, id, rewind_confirm);
-        if (rewind) { absolute_jump(video, before_playtime); return }
+    cookie_age_days: number = 1;
+    
+    judge_rewind: (bpt: PlayTime) => boolean = () => false;
+    private before_playtime: PlayTime | undefined = undefined;
+    rewind_min_secs: number = 300;
+    
+    
+    private get speed(): number {
+        return this.video.playbackRate;
     }
     
-    document.cookie = `${id}=${video_playtime.to_secs()}; Max-age=${86400*COOKIE_AGE_DAYS}`;
+    private set speed(spd: number) {
+        this.video.playbackRate = spd;
+    }
     
-    // !debug: Save Observe
-    console.log(`Save: ${video_playtime}`);
-};
-
-let save_interval_id_map: Map<string, number> = new Map();
-
-export const create_save_cycle = (video: HTMLVideoElement, id: string, rewind_confirm: (beforept: PlayTime) => boolean): boolean => {
-    if (save_interval_id_map.has(id)) return false;
-    const interval_id = window.setInterval(() => save_playtime(video, id, rewind_confirm), 1000*INTERVAL_DELAY_SECS);
-    save_interval_id_map.set(id, interval_id); return true
-};
-
-export const delete_save_cycle = (id: string): boolean => {
-    const interval_id = save_interval_id_map.get(id);
-    if (interval_id === undefined) return false;
-    clearInterval(interval_id);
-    save_interval_id_map.delete(id);
-    return true
+    private get playtime(): PlayTime {
+        return PlayTime.from_secs(this.video.currentTime);
+    }
+    
+    private set playtime(pt: PlayTime) {
+        this.video.currentTime = pt.to_secs();
+    }
+    
+    
+    constructor(video: HTMLVideoElement, id: string) {
+        this.video = video;
+        this.id = id;
+    }
+    
+    
+    private play() {
+        if (this.video.readyState >= this.video.HAVE_FUTURE_DATA) this.video.play();
+        
+        this.video.play().then(
+            () => {},
+            (err: DOMException) => {
+                if (err.message !== "The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22") throw err;
+                
+                // !debug: ignore DOMException (https://github.com/SolAlyth/Savicon/issues/1)
+                console.log(`debug: DOMException was ignored in lib/play (https://github.com/SolAlyth/Savicon/issues/1)`);
+            }
+        );
+    }
+    
+    private pause() {
+        this.video.pause();
+    }
+    
+    play_toggle() {
+        if (this.video.paused) this.play(); else this.pause();
+    }
+    
+    
+    absolute_jump(pt: PlayTime) {
+        this.playtime = pt;
+        
+        // !debug: Jump Observe
+        console.log(`jump: ${pt.fmt()}`);
+    }
+    
+    relative_jump(time: number) {
+        this.absolute_jump(this.playtime.add(time));
+    }
+    
+    
+    speed_faster(interval: number, max: number) {
+        if (this.speed <= max - interval) this.speed += interval;
+    }
+    
+    speed_slower(interval: number, min: number) {
+        if (min + interval <= this.speed) this.speed -= interval;
+    }
+    
+    
+    fastplay_on(): boolean {
+        if (this.fastplay_flag) return false;
+        
+        this.fastplay_before_speed = this.speed;
+        this.speed = this.fastplay_speed;
+        this.fastplay_flag = true;
+        return true;
+    }
+    
+    fastplay_off(): boolean {
+        if (!this.fastplay_flag) return false;
+        
+        this.speed = this.fastplay_before_speed;
+        this.fastplay_flag = false;
+        return true;
+    }
+    
+    
+    load_cookie(): PlayTime | null {
+        const ptl = document.cookie.split("; ").flatMap((cookie) => {
+            const result = cookie.match(`^${this.id}=([0-9]+)$`);
+            return (result !== null) ? [PlayTime.from_secs(Number(result[0]))] : []
+        });
+        
+        return ptl[0] ?? null;
+    }
+    
+    save_cookie() {
+        document.cookie = `${this.id}=${this.playtime.to_secs()}; Max-age=${86400*this.cookie_age_days}`;
+        
+        // !debug: Save Observe
+        console.log(`Save: ${this.playtime.fmt()}`);
+    }
+    
+    check_rewind() {
+        const pt = this.playtime, bpt = this.before_playtime;
+        if (pt === null || bpt === undefined) return;
+        
+        if (pt.to_secs() < this.cycle_interval_secs && bpt.distance(pt) < -this.rewind_min_secs) {
+            if (this.judge_rewind(bpt)) this.absolute_jump(bpt);
+        }
+    }
+    
+    create_save_cycle(): boolean {
+        if (this.cycle_id.is_some()) return false;
+        
+        const func = () => {
+            this.save_cookie();
+            this.check_rewind();
+        }
+        
+        const interval_id = window.setInterval(func, 1000*this.cycle_interval_secs);
+        this.cycle_id = Option.some(interval_id);
+        
+        return true;
+    }
+    
+    delete_save_cycle(): boolean {
+        return this.cycle_id.optmatch({
+            some: (cycle_id) => {
+                clearInterval(cycle_id);
+                this.cycle_id = Option.none();
+                
+                return true;
+            },
+            none: () => false
+        });
+    }
 }
-
-const load_playtime = (id: string): PlayTime | null => {
-    const match_result = (document.cookie).match(`${id}=([0-9]+)`);
-    return if_not_null(match_result, (matcharr) => PlayTime.from_secs(Number(matcharr[1])))
-}
-
-export const jump_saved_time = (video: HTMLVideoElement, id: string, confirm: (time: PlayTime) => boolean): boolean => {
-    const playtime = load_playtime(id);
-    if (playtime === null || !confirm(playtime)) return false;
-    absolute_jump(video, playtime); return true;
-};
