@@ -62,7 +62,7 @@ export const main = (window: { savicon_running_flag: boolean | undefined }): boo
     });
     
     const keymap = new Keymap(
-        [ new Key("Space"),              vc.play_toggle,            null ],
+        [ new Key("Space"),        () => vc.play_toggle(),          null ],
         [ new Key("ArrowLeft"),    () => vc.relative_jump(-5),      null ],
         [ new Key("ArrowRight"),   () => vc.relative_jump(5),       null ],
         [ new Key("Comma", true),  () => vc.speed_slower(0.2, 0.8), null ],
