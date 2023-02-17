@@ -34,7 +34,6 @@ def delete_and_copy(filename):
         ts = sub(line_test_regexp, "", ts)
         tmpf.write(ts)
 
-print("debug/test lines:")
 [(delete_and_copy(filename), print()) for filename in ["main", "lib"]]
 print("")
 

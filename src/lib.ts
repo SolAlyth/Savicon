@@ -216,9 +216,12 @@ export class VideoController {
     private video: HTMLVideoElement;
     private readonly id: string;
     
+    operate_callback: () => void = () => {};
+    
     fastplay_speed: number = 2.0;
     private fastplay_flag: boolean = false;
     private fastplay_before_speed: number = 0;
+    private fastplay_before_playing: boolean = true;
     
     cycle_interval_secs: number = 60;
     private cycle_id: Option<number> = Option.none();
@@ -231,12 +234,21 @@ export class VideoController {
     private before_playtime: PlayTime | undefined = undefined;
     
     
+    private get playing(): boolean {
+        return !this.video.paused
+    }
+    
+    private set playing(bool: boolean) {
+        if (this.playing !== bool) this.play_toggle();
+    }
+    
     private get speed(): number {
         return this.video.playbackRate;
     }
     
     private set speed(spd: number) {
         this.video.playbackRate = spd;
+        this.operate_callback();
     }
     
     private get playtime(): PlayTime {
@@ -245,6 +257,7 @@ export class VideoController {
     
     private set playtime(pt: PlayTime) {
         this.video.currentTime = pt.to_secs();
+        this.operate_callback();
     }
     
     
@@ -266,19 +279,23 @@ export class VideoController {
                 console.log(`debug: DOMException was ignored in lib/play (https://github.com/SolAlyth/Savicon/issues/1)`);
             }
         );
+        
+        this.operate_callback();
     }
     
     private pause() {
         this.video.pause();
+        this.operate_callback();
     }
     
     play_toggle() {
-        if (this.video.paused) this.play(); else this.pause();
+        if (this.playing) this.pause(); else this.play();
     }
     
     
     absolute_jump(pt: PlayTime) {
         this.playtime = pt;
+        this.operate_callback();
         
         // !debug: Jump Observe
         console.log(`jump: ${pt.fmt()}`);
@@ -302,7 +319,11 @@ export class VideoController {
         if (this.fastplay_flag) return false;
         
         this.fastplay_before_speed = this.speed;
+        this.fastplay_before_playing = this.playing;
+        
         this.speed = this.fastplay_speed;
+        if (!this.playing) this.play();
+        
         this.fastplay_flag = true;
         return true;
     }
@@ -311,6 +332,8 @@ export class VideoController {
         if (!this.fastplay_flag) return false;
         
         this.speed = this.fastplay_before_speed;
+        this.playing = this.fastplay_before_playing;
+        
         this.fastplay_flag = false;
         return true;
     }

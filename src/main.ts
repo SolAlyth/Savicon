@@ -51,9 +51,8 @@ export const main = (window: { savicon_running_flag: boolean | undefined }): boo
     vc.fastplay_speed = 10.0;
     vc.cycle_interval_secs = 10;
     vc.cookie_age_days = 30;
-    vc.judge_rewind = (bpt): boolean => {
-        return confirm(`長時間の前方向のジャンプを検出しました。\n${bpt.fmt()} に戻りますか？`);
-    }
+    vc.judge_rewind = (bpt): boolean => confirm(`長時間の前方向のジャンプを検出しました。\n${bpt.fmt()} に戻りますか？`);
+    vc.operate_callback = () => video.parentElement?.dispatchEvent(new MouseEvent("mousemove"));;
     
     const saved_playtime = vc.load_cookie();
     if_not_null(saved_playtime, (saved_pt) => {
@@ -67,11 +66,8 @@ export const main = (window: { savicon_running_flag: boolean | undefined }): boo
         [ new Key("ArrowRight"),   () => vc.relative_jump(5),       null ],
         [ new Key("Comma", true),  () => vc.speed_slower(0.2, 0.8), null ],
         [ new Key("Period", true), () => vc.speed_faster(0.2, 2.0), null ],
-        [ new Key("KeyJ"), () => { if_not_null(input_playtime(), (pt) => vc.absolute_jump(pt)); }, null ]
-        
-        // !test-start: fastplay
-        ,[ new Key("KeyM"), () => vc.fastplay_on(), () => vc.fastplay_off() ],
-        // !test-end: fastplay
+        [ new Key("KeyJ"), () => { if_not_null(input_playtime(), (pt) => vc.absolute_jump(pt)); }, null ],
+        [ new Key("KeyM"), () => vc.fastplay_on(), () => vc.fastplay_off() ]
     );
     
     keymap.create_listener();
