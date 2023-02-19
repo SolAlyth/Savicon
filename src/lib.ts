@@ -159,6 +159,7 @@ export class Keymap {
                         // !debug: Keydown Observe
                         console.log(`Keydown: ${inpkey}`);
                         
+                        e.preventDefault();
                         func();
                     });
                 });
@@ -170,6 +171,7 @@ export class Keymap {
                         // !debug: Keyup Observe
                         console.log(`Keyup: ${inpkey}`);
                         
+                        e.preventDefault();
                         func();
                     });
                 });
