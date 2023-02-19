@@ -20,7 +20,7 @@ const get_lesson_id = (): string | null => {
 };
 
 const input_playtime = (): PlayTime | null => {
-    const inp: string | null = prompt("ジャンプ先の時間を入力してください。\nh:mm:ss または mm:ss の形式で入力してください。");
+    const inp: string | null = prompt("ジャンプ先の時間を入力してください。\nh:mm または mm の形式で入力してください。");
     
     return if_not_null(inp, (inpstr) => {
         return if_null(PlayTime.try_from_string(inpstr), () => {

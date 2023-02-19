@@ -95,8 +95,8 @@ export class PlayTime {
     }
     
     static try_from_string(from: string): PlayTime | null {
-        const time_match_result = from.match(/^(([1-9]):)?([0-5]?[0-9]):([0-5]?[0-9])$/);
-        return if_not_null(time_match_result, (timearr) => new PlayTime(Number(timearr[2] ?? 0), Number(timearr[3]), Number(timearr[4])));
+        const time_match_result = from.match(/^(([1-9]):)?([0-5]?[0-9])$/);
+        return if_not_null(time_match_result, (timearr) => new PlayTime(Number(timearr[2] ?? 0), Number(timearr[3]), 0));
     }
 }
 
